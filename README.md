@@ -1,26 +1,43 @@
-# WSL USB Linux Kernel Setup
-Configures the Windows Subsystem for Linux drivers to natively use USB drivers and cameras when they are attached
+# WSL USB Linux Kernel Setup  
+This guide configures the Windows Subsystem for Linux (WSL) to natively support USB drivers, including cameras, when they are attached. By following these instructions, you'll build a custom WSL kernel to enable seamless integration of USB cameras and other devices within WSL.
 
-These instructions are based on BConic's instructions provided [here](https://askubuntu.com/questions/1405903/capturing-webcam-videowith-opencv-in-wsl2)
+These instructions are based on BConic's guide provided [here](https://askubuntu.com/questions/1405903/capturing-webcam-videowith-opencv-in-wsl2).
 
 ## Prerequisites
-Default WSL - If you haven't already installed WSL on windows, follow [these instructions](https://learn.microsoft.com/en-us/windows/wsl/setup/environment) to install the default WSL2 environment
+### 1. Default WSL Installation  
+If you haven’t already installed WSL on Windows, follow [these instructions](https://learn.microsoft.com/en-us/windows/wsl/setup/environment) to set up the default WSL2 environment.  
 
-USB Device Sharing - If you haven't already configured your Windows environment to share USB devices between Windows and WSL, first follow [these instructions](https://learn.microsoft.com/en-us/windows/wsl/connect-usb)
+### 2. USB Device Sharing  
+To allow USB devices to be shared between Windows and WSL, configure your environment by following [these instructions](https://learn.microsoft.com/en-us/windows/wsl/connect-usb).  
+
 
 **NOTE**
 > Once you share a USB device from Windows into WSL, you will be able to attach it to WSL. When the device is attached, it will no longer be avaialable in Windows. In order to switch it back to Windows, you will have to detach it, or physically disconnect it from the computer. The powershell scripts in the /scripts directory allow you to do this easily. It is recommended you copy these to a folder on your Windows PATH so that you can easily connect and disconnect USB devices from the command line. You will need to edit each script specifically to specify which devices you want to share/attach/detach. See instructions provided within the scripts.
 
 # Introduction
-Provided below is a common method to build a WSL kernel with USB and integrated camera drivers. The version I tested is the latest version- linux-msft-wsl-6.6.36.6, but it should be available for most versions with minor differences.
 
-I have tested this solution with the integrated camera on my PC.
+While USB devices can be shared with WSL using `usbipd` (a tool for forwarding USB devices into WSL), USB cameras present a unique challenge. USB cameras rely on **Video 4 Linux 2 (v4l2)**, the Linux API responsible for video device handling. Specifically:  
 
-This example compiles the WSL source code in WSL2 (Ubuntu 22.04)
+1. **Driver Registration**: For a USB camera to work in Linux, it must be associated with a `v4l2` driver, which registers the device as a `/dev/video#` node (where `#` is a number).  
+2. **WSL Limitation**: By default, WSL does not include the necessary kernel drivers for `v4l2` or USB video class (UVC) devices. As a result, USB cameras shared with WSL via `usbipd` do not appear under `/dev/video#` and are unusable in applications like OpenCV.  
+
+
+To enable USB cameras in WSL, you must build and install a custom WSL kernel with the appropriate support for:
+- **USB video class (UVC) devices**  
+- **Video 4 Linux 2 (v4l2)**  
+- **GSPCA-based USB camera drivers**  
+
+This guide walks you through compiling a custom WSL kernel that integrates these features, allowing USB cameras to work seamlessly in WSL environments.
+This has been tested with the latest version- linux-msft-wsl-6.6.36.6, but it should be available for most versions with minor differences.
+
 
 # 1) Compile the WSL Kernel with any Version
+This example compiles the WSL source code in WSL2 (Ubuntu 22.04). This is the recommended method to compile the kernel. If your WSL is Ubuntu 22.04, then this can be done directly in your WSL terminal. To check what os distro and release version you're in, you can run"
+```bash
+cat /etc/os-release
+```
 ## Step1: Install the dependencies
-
+Before starting to compile the kernel, we first need to update your Linux package source and install the dependencies for compiling the kernel.
 ### Update Package Source
 ```bash
 sudo apt update && sudo apt upgrade
@@ -68,11 +85,11 @@ Then we can see a terminal GUI for configuration
   - change `Media drivers - Media USB Adapters` to `*` status, and then enter its config \
     - change `GSPCA based webcams and USB Video Class (UVC)` to `"M"` status \
     - enter `GSPCA based webcams`, change all USB camera drivers to `M` , because we don't know our camera mode type \
-  - change `Device Drivers-USB support` to `*` status, and then enter its config \
-    - change `Support for Host-side USB` to `*` status \
-    - change `USB/IP support` to `*` status, and then change all its subitems to `*` status \
+- change `Device Drivers-USB support` to `*` status, and then enter its config \
+  - change `Support for Host-side USB` to `*` status \
+  - change `USB/IP support` to `*` status, and then change all its subitems to `*` status \
   
-Then, save them,and then exit with `Save and Exit` at the bottom \
+Then, save them,and then exit with `Save` and `Exit` at the bottom \
 
 ## Step4: Build the Kernel and Install the Modules
 
@@ -104,15 +121,39 @@ Section 4).
 Now, you can copy the kernel into your Windows path and add the path to the WSL config file
 
 ## Step1: Copy your Kernel into your Windows path
+
 ```bash
-sudo cp ./vmlinux /mnt/c/WSL/kernel/
+sudo mkdir -p /mnt/c/WSL/kernel/ # Make the WSL directory on the C Drive in Windows if it doesn't already exist
+sudo cp ./vmlinux /mnt/c/WSL/kernel/ # Copy the kernel to Windows
 ```
 ## Step1: Add the Path into the `C:/Users/{your user name}/.wslconfig` 
 **NOTE: if this file doesn't exist, create a new one** \
+> **Option 1: Create the File on the Windows Side** \
+    Open Notepad. \
+    Paste the content below \
+    Save the file as .wslconfig in the `C:\Users\%USERNAME%\` directory.
+
 ```text
 [wsl2]
 kernel=C:\\WSL\\kernel\\vmlinux
 ```
+
+> **Option 2: From WSL run the following commands** 
+    
+```bash
+# Step 1: Get the Windows username
+WIN_USERNAME=$(cmd.exe /C "echo %USERPROFILE%" | tr -d '\r' | sed -E 's|C:\\Users\\||')
+
+# Step 2: Define the kernel path
+KERNEL_PATH="C:\\\\WSL\\\\kernel\\\\vmlinux"
+
+# Step 3: Create the .wslconfig file with the kernel path
+echo -e "[wsl2]\nkernel=$KERNEL_PATH" | sudo tee "/mnt/c/Users/$WIN_USERNAME/.wslconfig"
+
+# Step 4: Verify the .wslconfig file was created
+cat "/mnt/c/Users/$WIN_USERNAME/.wslconfig"
+```
+
 ## Step3: Shutdown the WSL
 ```bash
 wsl --shutdown
