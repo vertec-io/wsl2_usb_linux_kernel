@@ -56,6 +56,11 @@ sudo apt install libncurses-dev
 **You can clone the repo, or download it from the release page**
 
 Remember to put them into a Linux system (i.e. directly in WSL2)
+
+### OPTIONAL - Add the Realtime Patch
+This is a good time to install any other patches that you may want in your Kernel. See instructions in [Install the PREEMPT Real-Time Patch](./realtime_patch.md).
+Return here once you've added this patch if desired.
+
 ### Enter a Directory
 ```bash
 cd ~
@@ -79,15 +84,32 @@ make menuconfig KCONFIG_CONFIG=Microsoft/config-wsl
 Then we can see a terminal GUI for configuration
 
 - `General setup - Local version`： add a suffix -usb-add for later version check (you can add your own suffix) \
+  - ![General Setup - Local Version](./images/general_setup_local_version_menu.JPG)
+  - ![General Setup - Local Version Suffix](./images/general_setup_local_version_suffix.JPG)
 - `Device Drivers-Multimedia support`: change it to * status (press space key), and then enter its config (press enter key) \
+  - ![Device Drivers - Multimedia support](./images/device_drivers_multimedia_support.JPG)
   - change `Filter media drivers,Autoselect ancillary drivers (tuners, sensors, i2c, spi, frontends)` to `*` status \
+    - ![Filter/Autoselect](./images/device_drivers_multimedia_support_filter_autoselect.JPG)
   - change `Media device types - Cameras and video grabbers` to `*` status \ 
+    - ![Media Device Types - Cameras and video grabbers](./images/device_drivers_multimedia_support_media_device_types.JPG)
   - change `Media drivers - Media USB Adapters` to `*` status, and then enter its config \
+    - ![Media Drivers - Media USB Adapters](./images/device_driver_media_usb_adapters.JPG)
     - change `GSPCA based webcams and USB Video Class (UVC)` to `"M"` status \
+      - ![UVC](./images/device_drivers_media_drivers_GSPCA_UVC.JPG)
     - enter `GSPCA based webcams`, change all USB camera drivers to `M` , because we don't know our camera mode type \
+      - ![GSPCA](./images/device_drivers_media_drivers_GSPCA_based_webcams.JPG)
 - change `Device Drivers-USB support` to `*` status, and then enter its config \
+  - ![Device Drivers - USB Support](./images/device_drivers_usb_support.JPG)- 
   - change `Support for Host-side USB` to `*` status \
+    - ![Host-Side USB](./images/device_drivers_usb_support_host-side-usb.JPG)
   - change `USB/IP support` to `*` status, and then change all its subitems to `*` status \
+    - ![USB/IP Support](./images/device_drivers_usb_support_usb-ip_support.JPG)
+
+**OPTIONAL**
+If you installed any other patches, this is where to configure them. For the Realtime PREEMPT patch, you can set the PREEMPT mode to realtime in:
+- `General setup - Preemption Model` config:
+  - `Preemption Model`: change it to `Fully Preemptible Kernel (Real-Time)`
+  - ![Fully Preemptible Kernel (Real-Time)](./images/general_setup_preemption_model.JPG)
   
 Then, save them,and then exit with `Save` and `Exit` at the bottom \
 
@@ -155,15 +177,23 @@ cat "/mnt/c/Users/$WIN_USERNAME/.wslconfig"
 
 ```
 
-## Step3: Shutdown the WSL
-```bash
+## Step3: From Windows Shutdown the WSL and restart it
+```powershell
+# Shutdown WSL
 wsl --shutdown
+
+# Restart WSL
+wsl
 ```
-## Step4: Enter the WSL and Check the Version
+
+## Step4: Check the WSL Version
 ```bash
 uname -a
 ```
 If you see the suffix (-usb-add), it means you have succeeded. The WSL kernel should support USB, and integrated camera now.
+```text
+Linux VERTEC-JQNQB54 6.6.36.6-microsoft-standard-WSL2-usb-add+ #2 SMP PREEMPT_DYNAMIC Sat Jan 25 09:40:51 CST 2025 x86_64 x86_64 x86_64 GNU/Linux
+```
 
 # 3) Camera Test
 If you want to use cameras, you should share the camera with WSL.
