@@ -257,6 +257,8 @@ To restore the WSL kernel and modules, follow these steps:
    ```bash
    sudo cp /mnt/c/WSL/backups/kernel/vmlinux /mnt/c/WSL/kernel/vmlinux
    ```
+   > If you get errors from WSL replacing the vmlinux file in the .wslconfig location, shut down wsl with `wsl --shutdown` and do this from the windows side.
+   
 
 2. **On the Windows side**, confirm that the `.wslconfig` file is correctly configured to point to the restored kernel:
    - Open the `.wslconfig` file:
