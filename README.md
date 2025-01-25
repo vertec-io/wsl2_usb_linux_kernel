@@ -144,14 +144,15 @@ kernel=C:\\WSL\\kernel\\vmlinux
 # Step 1: Get the Windows username
 WIN_USERNAME=$(cmd.exe /C "echo %USERPROFILE%" | tr -d '\r' | sed -E 's|C:\\Users\\||')
 
-# Step 2: Define the kernel path
-KERNEL_PATH="C:\\\\WSL\\\\kernel\\\\vmlinux"
+# Step 2: Define the kernel path with double backslashes
+KERNEL_PATH="C:\\\\\\\\WSL\\\\\\\\kernel\\\\\\\\vmlinux"
 
-# Step 3: Create the .wslconfig file with the kernel path
-echo -e "[wsl2]\nkernel=$KERNEL_PATH" | sudo tee "/mnt/c/Users/$WIN_USERNAME/.wslconfig"
+# Step 3: Create the .wslconfig file with the correctly escaped kernel path
+echo -e "[wsl2]\nkernel=$KERNEL_PATH" | sudo tee "/mnt/c/Users/$WIN_USERNAME/.wslconfig" > /dev/null
 
-# Step 4: Verify the .wslconfig file was created
+# Step 4: Verify the .wslconfig file was created correctly
 cat "/mnt/c/Users/$WIN_USERNAME/.wslconfig"
+
 ```
 
 ## Step3: Shutdown the WSL
