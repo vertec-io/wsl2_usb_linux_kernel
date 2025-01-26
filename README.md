@@ -111,10 +111,7 @@ If you installed any other patches, this is where to configure them. For the Rea
   - `Preemption Model`: change it to `Fully Preemptible Kernel (Real-Time)`
   - ![Fully Preemptible Kernel (Real-Time)](./images/general_setup_preemption_model.JPG)
   
-Then, save them,and then exit with `Save` and `Exit` at the bottom \
-Here’s an improved and clearer version of **Section 1) Step 4**, with better structure and language:
-
----
+Then, save them,and then exit with `Save` and `Exit` at the bottom
 
 ### **Step 4: Build the Kernel and Install the Modules**
 
