@@ -3,27 +3,63 @@
 # Before running these commands, you must have the USBIPD-WIN project installed on Windows.
 # Follow the instructions at https://learn.microsoft.com/en-us/windows/wsl/connect-usb
 
-# This script allows you to attach usb devices on Windows to WSL. 
-# First the USB device must be shared, then it can be attached. See `share-usb.ps1`. 
+Write-Host "Retrieving shared USB devices..." -ForegroundColor Cyan
+$usbDevices = usbipd list
 
-# Unfortunately if WSL is using the USB device, it cannot be used on Windows, and vice versa. 
-# Script `attach-usb.ps1` should be run whenever you want to use the device in WSL
+if (-not $usbDevices) {
+    Write-Host "No USB devices found. Ensure your USBIPD service is running and devices are connected." -ForegroundColor Red
+    exit
+}
 
-# To attach the USB device, run the following command. 
-# Ensure that a WSL command prompt is open in order to keep the WSL 2 lightweight VM active. 
-# Note that as long as the USB device is attached to WSL, it cannot be used by Windows. 
-# Once attached to WSL, the USB device can be used by any distribution running as WSL 2. 
-# Verify that the device is attached using usbipd list. 
-# From the WSL prompt, run `lsusb` to verify that the USB device is listed and can be interacted with using Linux tools.
+# Parse the `usbipd list` output using regex
+$deviceList = @()
+$usbDevices -split "`n" | ForEach-Object {
+    if ($_ -match "^(?<BUSID>\S+)\s+(?<VIDPID>\S+)\s+(?<Device>.+?)\s+(?<State>Shared|Not shared|Attached)$") {
+        $deviceList += [PSCustomObject]@{
+            BUSID   = $matches['BUSID']
+            VIDPID  = $matches['VIDPID']
+            Device  = $matches['Device']
+            State   = $matches['State']
+        }
+    }
+}
 
+if (-not $deviceList) {
+    Write-Host "No USB devices were found. Ensure devices are connected and try again." -ForegroundColor Red
+    exit
+}
 
+# Filter shared and attached devices
+$sharedDevices = $deviceList | Where-Object { $_.State -eq "Shared" }
+$attachedDevices = $deviceList | Where-Object { $_.State -eq "Attached" }
 
-# -- EDIT BELOW -- #
+# Check if there are no shared devices
+if (-not $sharedDevices) {
+    Write-Host "No devices are in the Shared state. Ensure the USB device is shared using 'usbipd share --busid <BUSID>'." -ForegroundColor Yellow
+    if ($attachedDevices) {
+        Write-Host "The following devices are already attached:" -ForegroundColor Cyan
+        $attachedDevices | ForEach-Object {
+            Write-Host ("BUSID: {0} | VID:PID: {1} | Device: {2}" -f $_.BUSID, $_.VIDPID, $_.Device) -ForegroundColor Yellow
+        }
+    }
+    exit
+}
 
+# Display the list of shared devices for selection
+Write-Host "Select a device from the list in the graphical window to attach..."
+$selectedDevice = $sharedDevices | Out-GridView -Title "Select a USB Device to Attach to WSL" -PassThru
 
-# UNCOMMENT THE NEXT TWO LINES AND EDIT THE BUS ID WITH THE CORRECT ONE FOR YOUR USB DEVICE (use `usbipd list` to check your BUSID)
-#usbipd attach --wsl --busid <busid> 
-#Write-Host "Don't forget to check to see that this device is available in WSL. Run `lsusb` in WSL to verify" -ForegroundColor Green 
+if (-not $selectedDevice) {
+    Write-Host "No device selected. Exiting." -ForegroundColor Yellow
+    exit
+}
 
-# COMMENT THE NEXT LINE
-Write-Host "NO USB DEVICE SET FOR ATTACHING. EDIT THIS SCRIPT AND UPDATE THE LINE ABOVE THIS ONE." -ForegroundColor Red 
+# Attach the selected BUSID
+$selectedBusID = $selectedDevice.BUSID
+usbipd attach --wsl --busid $selectedBusID
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Device with BUSID $selectedBusID successfully attached to WSL." -ForegroundColor Green
+    Write-Host "Run 'lsusb' in WSL to verify the device is available." -ForegroundColor Green
+} else {
+    Write-Host "Failed to attach device with BUSID $selectedBusID. Check the device state and try again." -ForegroundColor Red
+}

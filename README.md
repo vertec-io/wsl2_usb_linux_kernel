@@ -57,9 +57,6 @@ sudo apt install libncurses-dev
 
 Remember to put them into a Linux system (i.e. directly in WSL2)
 
-### OPTIONAL - Add the Realtime Patch
-This is a good time to install any other patches that you may want in your Kernel. See instructions in [Install the PREEMPT Real-Time Patch](./realtime_patch.md).
-Return here once you've added this patch if desired.
 
 ### Enter a Directory
 ```bash
@@ -71,6 +68,9 @@ For example, the tag "linux-msft-wsl-6.6.36.6"
 ```bash
 git clone --depth 1 -b linux-msft-wsl-6.6.36.6 https://github.com/microsoft/WSL2-Linux-Kernel.git
 ```
+### OPTIONAL - Add the Realtime Patch
+This is a good time to install any other patches that you may want in your Kernel. See instructions in [Install the PREEMPT Real-Time Patch](./realtime_patch.md).
+Return here once you've added this patch if desired.
 
 ### Enter the Source Directory
 ```bash
@@ -83,26 +83,26 @@ make menuconfig KCONFIG_CONFIG=Microsoft/config-wsl
 
 Then we can see a terminal GUI for configuration
 
-- `General setup - Local version`： add a suffix -usb-add for later version check (you can add your own suffix) \
+- `General setup - Local version`： add a suffix -usb-add for later version check (you can add your own suffix)
   - ![General Setup - Local Version](./images/general_setup_local_version_menu.JPG)
   - ![General Setup - Local Version Suffix](./images/general_setup_local_version_suffix.JPG)
-- `Device Drivers-Multimedia support`: change it to * status (press space key), and then enter its config (press enter key) \
+- `Device Drivers-Multimedia support`: change it to * status (press space key), and then enter its config (press enter key)
   - ![Device Drivers - Multimedia support](./images/device_drivers_multimedia_support.JPG)
-  - change `Filter media drivers,Autoselect ancillary drivers (tuners, sensors, i2c, spi, frontends)` to `*` status \
+  - change `Filter media drivers,Autoselect ancillary drivers (tuners, sensors, i2c, spi, frontends)` to `*` status
     - ![Filter/Autoselect](./images/device_drivers_multimedia_support_filter_autoselect.JPG)
-  - change `Media device types - Cameras and video grabbers` to `*` status \ 
+  - change `Media device types - Cameras and video grabbers` to `*` status 
     - ![Media Device Types - Cameras and video grabbers](./images/device_drivers_multimedia_support_media_device_types.JPG)
-  - change `Media drivers - Media USB Adapters` to `*` status, and then enter its config \
+  - change `Media drivers - Media USB Adapters` to `*` status, and then enter its config
     - ![Media Drivers - Media USB Adapters](./images/device_driver_media_usb_adapters.JPG)
-    - change `GSPCA based webcams and USB Video Class (UVC)` to `"M"` status \
+    - change `GSPCA based webcams and USB Video Class (UVC)` to `"M"` status
       - ![UVC](./images/device_drivers_media_drivers_GSPCA_UVC.JPG)
-    - enter `GSPCA based webcams`, change all USB camera drivers to `M` , because we don't know our camera mode type \
+    - enter `GSPCA based webcams`, change all USB camera drivers to `M` , because we don't know our camera mode type
       - ![GSPCA](./images/device_drivers_media_drivers_GSPCA_based_webcams.JPG)
-- change `Device Drivers-USB support` to `*` status, and then enter its config \
+- change `Device Drivers-USB support` to `*` status, and then enter its config
   - ![Device Drivers - USB Support](./images/device_drivers_usb_support.JPG)- 
-  - change `Support for Host-side USB` to `*` status \
+  - change `Support for Host-side USB` to `*` status
     - ![Host-Side USB](./images/device_drivers_usb_support_host-side-usb.JPG)
-  - change `USB/IP support` to `*` status, and then change all its subitems to `*` status \
+  - change `USB/IP support` to `*` status, and then change all its subitems to `*` status
     - ![USB/IP Support](./images/device_drivers_usb_support_usb-ip_support.JPG)
 
 **OPTIONAL**
@@ -112,32 +112,50 @@ If you installed any other patches, this is where to configure them. For the Rea
   - ![Fully Preemptible Kernel (Real-Time)](./images/general_setup_preemption_model.JPG)
   
 Then, save them,and then exit with `Save` and `Exit` at the bottom \
+Here’s an improved and clearer version of **Section 1) Step 4**, with better structure and language:
 
-## Step4: Build the Kernel and Install the Modules
+---
 
-### Compile the Kernel
+### **Step 4: Build the Kernel and Install the Modules**
+
+#### **Compile the Kernel**
+Run the following command to compile the kernel using the configuration file:
 ```bash
 make KCONFIG_CONFIG=Microsoft/config-wsl -j$(nproc)
 ```
 
-### Compile all the Modules According to the Config File
+#### **Compile the Modules**
+Compile all kernel modules defined in the configuration file:
 ```bash
 sudo make KCONFIG_CONFIG=Microsoft/config-wsl modules -j$(nproc)
 ```
-### Install all the Modules According to the Config File
+
+#### **Install the Modules**
+Install the compiled kernel modules into the current system:
 ```bash
 sudo make KCONFIG_CONFIG=Microsoft/config-wsl modules_install -j$(nproc)
 ```
-Then, you will get the WSL kernel (`./vmlinux`);
 
-The modules are installed into the current system (`/lib/modules/6.6.36.6-microsoft-standard-WSL2-usb-add+`).
+After completing these steps:
+- The compiled WSL kernel will be located at `./vmlinux`.
+- The modules will be installed into your current WSL system under the directory:
+  ```plaintext
+  /lib/modules/<kernel-version>
+  ```
+  For example: `/lib/modules/6.6.36.6-microsoft-standard-WSL2-usb-add+`.
+---
 
-Here, the current system is the current WSL subsystem (Distro). \
-The modules are the parts that are marked `M` status in the configuration (Step 3) \
-If the current subsystem (suppose it Ubuntu-ROS) is removed (unregistered), the modules (it contains USB camera drivers) will disappear, and other subsystems will also lose the modules; If WSL is restarted, you have to start the subsystem (Ubuntu-ROS) once to add the modules into WSL. \
+#### **Important Notes About Modules**
+- The modules are installed in the current WSL distribution (or "distro"). They include any components configured with `M` status in **Step 3** of this guide.
+- If the current WSL distribution (e.g., `Ubuntu`) is unregistered or deleted, the installed modules will also be removed.
+- Other WSL distributions will lose access to these modules, as they are specific to the kernel version and the WSL environment where they were installed.
+- If WSL is restarted, the modules will not automatically load until the distribution where they were installed is started. Simply opening the relevant WSL distro will initialize the modules.
+---
 
-I don't think you want to compile it again for the same issue. Backing up the WSL Distro is a solution. But, backing up the module folder is a better solution (See 
-Section 4).
+#### **Backing Up Your Modules**
+Recompiling the kernel and modules is time-consuming. To avoid repeating this process, it's recommended to back up the installed modules directory.
+
+For detailed backup instructions, see **Section 5)** of this guide.
 
 # 2) Replace the kernel with the default one
 Now, you can copy the kernel into your Windows path and add the path to the WSL config file
@@ -146,7 +164,7 @@ Now, you can copy the kernel into your Windows path and add the path to the WSL 
 
 ```bash
 sudo mkdir -p /mnt/c/WSL/kernel/ # Make the WSL directory on the C Drive in Windows if it doesn't already exist
-sudo cp ./vmlinux /mnt/c/WSL/kernel/ # Copy the kernel to Windows
+sudo cp ./vmlinux /mnt/c/WSL/kernel/ # Copy the kernel to Windows in the C:/WSL/kernel/ directory
 ```
 ## Step1: Add the Path into the `C:/Users/{your user name}/.wslconfig` 
 **NOTE: if this file doesn't exist, create a new one** \
@@ -185,15 +203,15 @@ wsl --shutdown
 # Restart WSL
 wsl
 ```
+> You may need to do this twice for it to take effect
 
 ## Step4: Check the WSL Version
 ```bash
 uname -a
 ```
-If you see the suffix (-usb-add), it means you have succeeded. The WSL kernel should support USB, and integrated camera now.
-```text
-Linux VERTEC-JQNQB54 6.6.36.6-microsoft-standard-WSL2-usb-add+ #2 SMP PREEMPT_DYNAMIC Sat Jan 25 09:40:51 CST 2025 x86_64 x86_64 x86_64 GNU/Linux
-```
+If you see the suffix (-usb-add), it means you have succeeded. The WSL kernel should support USB, and integrated camera now. You will also see which Preemption mode your WSL kernel is in. Here we can verify that we have correctly installed the PREEMPT_RT Real-Time mode.
+
+Linux MY-WIN-PC 6.6.36.6-rt35-microsoft-standard-WSL2-`usb-add+` #2 SMP `PREEMPT_RT` Sat Jan 25 14:48:34 CST 2025 x86_64 x86_64 x86_64 GNU/Linux
 
 # 3) Camera Test
 If you want to use cameras, you should share the camera with WSL.
@@ -201,7 +219,7 @@ If you want to use cameras, you should share the camera with WSL.
 ## Step1: If you haven't already, install `usbipd-win`. See the prerequistes for additional instructions.
 
 ## Step2: Run the commands below on your Windows with `Powershell`
-Alternatively, see the scripts in the /scripts folder for powershell scripts to make this easier.
+> Alternatively, see the scripts in the /scripts folder for powershell scripts to make this easier.
 ### List All USB Devices
 ```powershell
 usbipd list
@@ -224,8 +242,21 @@ ls /dev/video*
 ```
 If you see any video devices with the command above, it means you have succeeded. Now, you can use the camera with OpenCV in WSL.
 
-# 4) Backing Up Your Effort
-Compiling the kernel and modules can be time-consuming (often taking over an hour). To avoid repeating the process, it’s a good idea to back up your work, including the compiled WSL kernel and modules. This will allow you to quickly restore your setup if needed.
+# 4) Making Changes
+If you need to make any changes to your configuration, make sure you first clean up your previous build with:
+```bash
+make clean
+make mrproper
+```
+This removes most build artifacts, such as .o files and intermediate objects, but keeps the kernel configuration file (.config).
+Then you can make your changes to your config with the instructions in **Section 1)**, `Step 3`.
+
+You can recompile your kernel and modules with the instructions in **Section 1)**, `Step 4`.
+
+You can update your kernel in windows with the instructions in **Section 2)**.
+
+# 5) Backing Up Your Custom Kernel and Modules
+Compiling the kernel and modules can be time-consuming, often taking over an hour. To avoid repeating the process, it’s a good idea to back up your work, including the compiled WSL kernel and modules. This will allow you to quickly restore your setup if needed.
 
 ## Step 1: Save the WSL Kernel (`vmlinux` File)
 The `vmlinux` file is the compiled kernel. To back it up:
