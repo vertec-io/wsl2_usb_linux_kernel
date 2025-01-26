@@ -12,7 +12,7 @@ To allow USB devices to be shared between Windows and WSL, configure your enviro
 
 
 **NOTE**
-> Once you share a USB device from Windows into WSL, you will be able to attach it to WSL. When the device is attached, it will no longer be avaialable in Windows. In order to switch it back to Windows, you will have to detach it, or physically disconnect it from the computer. The powershell scripts in the /scripts directory allow you to do this easily. It is recommended you copy these to a folder on your Windows PATH so that you can easily connect and disconnect USB devices from the command line. You will need to edit each script specifically to specify which devices you want to share/attach/detach. See instructions provided within the scripts.
+> Once you share a USB device from Windows into WSL, you will be able to attach it to WSL. When the device is attached, it will no longer be avaialable in Windows. In order to switch it back to Windows, you will have to detach it, or physically disconnect it from the computer. The powershell scripts in the /scripts directory allow you to do this easily. It is recommended you copy these to a folder on your Windows PATH so that you can easily connect and disconnect USB devices from the command line.
 
 # Introduction
 
